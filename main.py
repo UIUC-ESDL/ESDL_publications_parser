@@ -30,7 +30,7 @@ def generate_html_markup(item):
     authors_str = item['author'] + '. '
     title_str = item['title'] + '. '
     other_info = get_additional_info(item)
-    pdf_url = '<a href = "http://systemdesign.illinois.edu/publications/' + item['ID'] + '.pdf" target =' '"_blank">pdf</a>'
+    pdf_url = '<a href = "http://docs.systemdesign.illinois.edu/publications/' + item['ID'] + '.pdf" target =' '"_blank">pdf</a>'
     try:
         doi_url = 'DOI: <a href = "http://dx.doi.org/' + item['doi'] + '" target = "_blank">' + item['doi'] + '</a>'
     except:
