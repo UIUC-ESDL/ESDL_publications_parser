@@ -2,7 +2,7 @@ import bibtexparser
 from datetime import datetime
 import pandas as pd
 
-def generate_ESDL_code(item):
+def generate_ESDL_tag(item):
     if item['ENTRYTYPE'] == 'inproceedings':
         if item['esdlid'] != '*':
             esdl_label = '[' + item['esdlid'] + ']'
@@ -20,15 +20,15 @@ def get_additional_info(item):
         add_info = 'In' + item['booktitle'] + ', ' + item.get('number', '') + ', ' + item.get('pages', '') + \
                    ', ' + item['address'] + ', ' + item['month'].capitalize() + ' ' + item['year'] + ' '
     elif item['ENTRYTYPE'] == 'article':
-        add_info = item['journal'] + item['volume'] + '(' + item['number'] + ')' + ', pp. ' + \
+        add_info = item['journal'] + '. Vol: ' + item['volume'] + '(' + item['number'] + ')' + ', pp. ' + \
                    item['pages'] + ', ' + item.get('month', '') + ' ' + item['year'] + ' '
     return add_info
 
 
 def generate_html_markup(item):
-    esdl_id = generate_ESDL_code(item)
-    authors_str = item['author'] + '.'
-    title_str = item['title']
+    esdl_id = generate_ESDL_tag(item) + ' '
+    authors_str = item['author'] + '. '
+    title_str = item['title'] + '. '
     other_info = get_additional_info(item)
     pdf_url = '<a href = "http://systemdesign.illinois.edu/publications/' + item['ID'] + '.pdf" target =' '"_blank">pdf</a>'
     try:
@@ -36,7 +36,7 @@ def generate_html_markup(item):
     except:
         doi_url = ''
 
-    html_markup = esdl_id + authors_str + title_str + other_info + pdf_url + doi_url
+    html_markup = esdl_id + authors_str + title_str + other_info + pdf_url + ' ' + doi_url
     return html_markup
 
 def set_type_publication(entrytype):
@@ -61,10 +61,16 @@ def generate_entry_data(item):
                  'TYPE OF SUBMISSION': set_type_publication(item['ENTRYTYPE'].lower()),
                  'TITLE OF SUBMISSION': item['title'],
                  'IN WHAT CONFERENCE OR JOURNAL WILL THIS SUBMISSION APPEAR': item[set_conference_or_journal(item['ENTRYTYPE'].lower())],
+                 'PUBLICATION STATE': 'Accepted, published in print',
                  'CO-AUTHORS/EXTERNAL COLLABORATORS': item['author'],
                  'DOI (when available)': item.get('doi', ''),
                  'ESDL PUBLICATION ID': item['esdlid'],
-                 'html MARK UP CODE': generate_html_markup(item)}
+                 'html MARK UP CODE': generate_html_markup(item),
+                 'Volume': item.get('volume', ''),
+                 'Issue': item.get('number', ''),
+                 'Pages': item.get('pages', ''),
+                 'Publication Date': item.get('month', '') + ' ' + item['year'],
+                 }
     return item_dict
 
 def preprocess_excel_file(xls_file):
@@ -93,6 +99,9 @@ if __name__ == "__main__":
             entry_data = generate_entry_data(entry)
             entry_data_df = pd.DataFrame.from_dict(entry_data, orient='index')
             df = pd.concat([df, entry_data_df.T])
+
+    # Update datetime column
+    df['DATE OF ENTRY'] = pd.to_datetime(df['DATE OF ENTRY'], format='%m/%d/%Y').dt.strftime('%m/%d/%Y')
 
     # Finally return and save a new modified spreadsheet
     df.to_excel('modified_publications.xlsx')
