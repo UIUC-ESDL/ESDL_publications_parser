@@ -5,34 +5,37 @@ import pandas as pd
 def generate_ESDL_tag(item):
     if item['ENTRYTYPE'] == 'inproceedings':
         if item['esdlid'] != '*':
-            esdl_label = '[' + item['esdlid'] + ']'
+            esdl_label = item['esdlid']
         else:
-            esdl_label = '[CXX]'
+            esdl_label = 'CXX'
     elif item['ENTRYTYPE'] == 'article':
         if item['esdlid'] != '*':
-            esdl_label = '[' + item['esdlid'] + ']'
+            esdl_label = item['esdlid']
         else:
-            esdl_label = '[JXX]'
+            esdl_label = 'JXX'
     return esdl_label
 
 def get_additional_info(item):
     if item['ENTRYTYPE'] == 'inproceedings':
         add_info = 'In' + item['booktitle'] + ', ' + item.get('number', '') + ', ' + item.get('pages', '') + \
-                   ', ' + item['address'] + ', ' + item['month'].capitalize() + ' ' + item['year'] + ' '
+                   ', ' + item.get('address', '') + ', ' + item.get('month', '').capitalize() + ' ' + item['year'] + ' '
     elif item['ENTRYTYPE'] == 'article':
-        add_info = item['journal'] + '. Vol: ' + item['volume'] + '(' + item['number'] + ')' + ', pp. ' + \
-                   item['pages'] + ', ' + item.get('month', '') + ' ' + item['year'] + ' '
+        add_info = item['journal'] + '. Vol: ' + item['volume'] + '(' + item.get('number', '') + ')' + ', pp. ' + \
+                   item.get('pages', 'uk') + ', ' + item.get('month', '') + ' ' + item['year'] + ' '
     return add_info
 
 
 def generate_html_markup(item):
-    esdl_id = generate_ESDL_tag(item) + ' '
+    esdl_id = '[' + generate_ESDL_tag(item) + ']' + ' '
     authors_str = item['author'] + '. '
     title_str = item['title'] + '. '
     other_info = get_additional_info(item)
     pdf_url = '<a href = "http://docs.systemdesign.illinois.edu/publications/' + item['ID'] + '.pdf" target =' '"_blank">pdf</a>'
     try:
-        doi_url = 'DOI: <a href = "http://dx.doi.org/' + item['doi'] + '" target = "_blank">' + item['doi'] + '</a>'
+        if item['doi'][0] == 'h':
+            doi_url = 'DOI: <a href = "' + item['doi'] + '" target = "_blank">' + item['doi'] + '</a>'
+        elif item['doi'][0] == '1':
+            doi_url = 'DOI: <a href = "http://dx.doi.org/' + item['doi'] + '" target = "_blank">' + item['doi'] + '</a>'
     except:
         doi_url = ''
 
@@ -64,12 +67,12 @@ def generate_entry_data(item):
                  'PUBLICATION STATE': 'Accepted, published in print',
                  'CO-AUTHORS/EXTERNAL COLLABORATORS': item['author'],
                  'DOI (when available)': item.get('doi', ''),
-                 'ESDL PUBLICATION ID': item['esdlid'],
+                 'ESDL PUBLICATION ID': generate_ESDL_tag(item),
                  'html MARK UP CODE': generate_html_markup(item),
                  'Volume': item.get('volume', ''),
                  'Issue': item.get('number', ''),
                  'Pages': item.get('pages', ''),
-                 'Publication Date': item.get('month', '') + ' ' + item['year'],
+                 'Publication Date': item.get('month', 'June') + ' ' + item['year'],
                  }
     return item_dict
 
@@ -102,6 +105,7 @@ if __name__ == "__main__":
 
     # Update datetime column
     df['DATE OF ENTRY'] = pd.to_datetime(df['DATE OF ENTRY'], format='%m/%d/%Y').dt.strftime('%m/%d/%Y')
+    df['Publication Date'] = pd.to_datetime(df['Publication Date'], format='%B %Y').dt.strftime('%m/%Y')
 
     # Finally return and save a new modified spreadsheet
     df.to_excel('modified_publications.xlsx')
